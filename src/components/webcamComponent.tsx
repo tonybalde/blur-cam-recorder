@@ -2,6 +2,7 @@ import React, { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { SelfieSegmentation, Results } from '@mediapipe/selfie_segmentation';
 import { Camera } from '@mediapipe/camera_utils';
+import './webcamComponent.css';
 
 const WebcamComponent: React.FC = () => {
   const webcamRef = useRef<Webcam>(null);
@@ -49,24 +50,35 @@ const WebcamComponent: React.FC = () => {
     if (results.segmentationMask) {
       canvasCtx.globalCompositeOperation = 'source-in';
       canvasCtx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.globalCompositeOperation = 'destination-atop';
+      canvasCtx.globalCompositeOperation = 'source-out';
       canvasCtx.filter = 'blur(10px)';
       canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.globalCompositeOperation = 'destination-over';
+      canvasCtx.globalCompositeOperation = 'destination-atop';
+      canvasCtx.filter = 'none';
       canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
     }
 
     canvasCtx.restore();
   };
 
-  const handleStartCaptureClick = useCallback(() => {
+  const handleStartCaptureClick = useCallback(async () => {
     setCapturing(true);
-    if (canvasRef.current) {
-      mediaRecorderRef.current = new MediaRecorder(canvasRef.current.captureStream() as MediaStream, {
-        mimeType: 'video/webm',
-      });
-      mediaRecorderRef.current.addEventListener('dataavailable', handleDataAvailable);
-      mediaRecorderRef.current.start();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (canvasRef.current) {
+        const canvasStream = canvasRef.current.captureStream() as MediaStream;
+        const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...stream.getAudioTracks()]);
+
+        mediaRecorderRef.current = new MediaRecorder(combinedStream, {
+          mimeType: 'video/webm',
+        });
+
+        mediaRecorderRef.current.addEventListener('dataavailable', handleDataAvailable);
+        mediaRecorderRef.current.start();
+      }
+    } catch (err) {
+      console.error('Error accessing media devices.', err);
     }
   }, [canvasRef, setCapturing, mediaRecorderRef]);
 
@@ -102,12 +114,12 @@ const WebcamComponent: React.FC = () => {
 
   return (
     <>
-      <Webcam audio={true} ref={webcamRef} style={{ display: 'none' }} />
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+       <Webcam audio={true} ref={webcamRef} style={{ display: 'none' }} />
+       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
       {capturing ? (
-        <button onClick={handleStopCaptureClick}>Stop Capture</button>
+        <button onClick={handleStopCaptureClick}>Stop</button>
       ) : (
-        <button onClick={handleStartCaptureClick}>Start Capture</button>
+        <button onClick={handleStartCaptureClick}>Start Recording</button>
       )}
       {recordedChunks.length > 0 && (
         <button onClick={handleDownload}>Download</button>
