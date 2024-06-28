@@ -118,12 +118,12 @@ const WebcamComponent: React.FC = () => {
        <Webcam audio={true} ref={webcamRef} style={{ display: 'none' }} />
        <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} width={1920} height={1080} />
       {capturing ? (
-        <button onClick={handleStopCaptureClick}>Stop</button>
+        <button onClick={handleStopCaptureClick} className='buttons rec'>Stop</button>
       ) : (
-        <button onClick={handleStartCaptureClick}>Start Recording</button>
+        <button onClick={handleStartCaptureClick} className='buttons rec'>Start Recording</button>
       )}
       {recordedChunks.length > 0 && (
-        <button onClick={handleDownload}>Download</button>
+        <button onClick={handleDownload} className='buttons download'>Download</button>
       )}
     </>
   );
