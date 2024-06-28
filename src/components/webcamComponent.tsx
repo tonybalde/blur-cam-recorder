@@ -27,8 +27,8 @@ const WebcamComponent: React.FC = () => {
         onFrame: async () => {
           await selfieSegmentation.send({ image: webcamRef.current!.video! });
         },
-        width: 1280,
-        height: 720,
+        width: 1920,
+        height: 1080,
       });
       camera.start();
     }
@@ -51,7 +51,7 @@ const WebcamComponent: React.FC = () => {
       canvasCtx.globalCompositeOperation = 'source-in';
       canvasCtx.drawImage(results.segmentationMask, 0, 0, canvasElement.width, canvasElement.height);
       canvasCtx.globalCompositeOperation = 'source-out';
-      canvasCtx.filter = 'blur(10px)';
+      canvasCtx.filter = 'blur(50px)';
       canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
       canvasCtx.globalCompositeOperation = 'destination-atop';
       canvasCtx.filter = 'none';
@@ -67,11 +67,12 @@ const WebcamComponent: React.FC = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       if (canvasRef.current) {
-        const canvasStream = canvasRef.current.captureStream() as MediaStream;
+        const canvasStream = canvasRef.current.captureStream(60) as MediaStream;
         const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...stream.getAudioTracks()]);
 
         mediaRecorderRef.current = new MediaRecorder(combinedStream, {
           mimeType: 'video/webm',
+          videoBitsPerSecond: 5 * 1024 * 1024, // 5 Mbps for higher quality
         });
 
         mediaRecorderRef.current.addEventListener('dataavailable', handleDataAvailable);
@@ -115,7 +116,7 @@ const WebcamComponent: React.FC = () => {
   return (
     <>
        <Webcam audio={true} ref={webcamRef} style={{ display: 'none' }} />
-       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} width={1920} height={1080} />
       {capturing ? (
         <button onClick={handleStopCaptureClick}>Stop</button>
       ) : (
